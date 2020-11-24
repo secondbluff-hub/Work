@@ -34,3 +34,7 @@
 *.user
 Picker/GeneratedFiles/
 Picker/x64/
+*.opendb
+*.suo
+*.ilk
+*.pdb
