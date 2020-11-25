@@ -10,12 +10,17 @@
 #include <Qstring>
 #include <QDebug>
 #include <QMenu>
+#include <QToolTip>
+#include <QCursor>
+
+#include <utility>
 
 Picker::Picker(QWidget *parent) : QDialog(parent)
 {
 	auto _label = new QLabel(tr("Enter numbers"));
 
 	_line = new QLineEdit;
+	_line->setStyleSheet("border-style: solid, border-width: 1px; border-color: black");
 
 	auto regExp = new QRegularExpression("^[\\d\\s|-]+$");
 	auto validator = new QRegularExpressionValidator(*regExp);
@@ -41,19 +46,25 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 
 	connect(_genButton, &QPushButton::clicked, this, &Picker::editListBox);
 	connect(_clearButton, &QPushButton::clicked, this, &Picker::clearListBox);
+
+	connect(this, &Picker::detectedBadValue, this, &Picker::valueError);
 }
 
 void Picker::editListBox()
 {
-	lineParse();
-
 	_list->clear();
 
-	for (const auto& n : _lineContainer)
+	if(lineParse())
 	{
-		_list->addItem(QString::number(n));
+		int i = 0;
+		for (const auto& n : _lineContainer)
+		{
+			_list->addItem(QString::number(n.first));
+			_list->item(i++)->setForeground(n.second);
+		}
+
+		_line->clear();
 	}
-	_line->clear();
 }
 
 void Picker::provideContextMenu(const QPoint &pos)
@@ -69,20 +80,38 @@ void Picker::provideContextMenu(const QPoint &pos)
 }
 
 void Picker::insertSingleOrRange(int num, int beginNum = -1) {
-	if (num > 0xffff) {
-		return;
-	}
-
 	if (beginNum >= 0) {
 		int increment = beginNum < num ? 1 : -1;
 		for (int i = beginNum; i != num + increment; i += increment) {
-			_lineContainer.insert(i);
+			insertValueWithRandomColor(i);
 		}
 	}
 	else
 	{
-		_lineContainer.insert(num);
+		insertValueWithRandomColor(num);
 	}
+}
+
+void Picker::insertValueWithRandomColor(int value)
+{
+	_lineContainer.insert(std::make_pair(value, static_cast<Qt::GlobalColor>(rand() % 19)));
+}
+
+void Picker::valueError(long long value)
+{
+	_line->setStyleSheet("border-style: solid; border-width: 2px; border-color: red");
+
+	auto messageError = tr("Bad value: ") + QString::number(value);
+	QToolTip::showText(QCursor::pos(), messageError);
+
+	connect(_line, &QLineEdit::textChanged, this, &Picker::valueRight);
+}
+
+void Picker::valueRight()
+{
+	_line->setStyleSheet("border-style: solid; border-width: 1px; border-color: black");
+
+	disconnect(_line, &QLineEdit::textChanged, this, &Picker::valueRight);
 }
 
 void Picker::clearListBox()
@@ -91,7 +120,7 @@ void Picker::clearListBox()
 	_lineContainer.clear();
 }
 
-void Picker::lineParse()
+bool Picker::lineParse()
 {
 	QString number;
 
@@ -99,6 +128,16 @@ void Picker::lineParse()
 	for (const auto& n : nums)
 	{
 		auto num = n.split('-', QString::SkipEmptyParts);
+
+		for (const auto& nn : num)
+		{
+			if (nn.toInt() > 0xffff)
+			{
+				emit detectedBadValue(nn.toInt());
+				return false;
+			}
+		}
+
 		if (num.size() == 1)
 		{
 			insertSingleOrRange(num.at(0).toInt());
@@ -108,4 +147,6 @@ void Picker::lineParse()
 			insertSingleOrRange(num.at(1).toInt(), num.at(0).toInt());
 		}
 	}
+
+	return true;
 }

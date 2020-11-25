@@ -1,12 +1,12 @@
 #pragma once
 
 #include <QtWidgets/QDialog>
+#include <QListWidget>
 
-#include <set>
+#include <map>
 
 class QLineEdit;
 class QPushButton;
-class QListWidget;
 class QVBoxLayout;
 
 class Picker : public QDialog
@@ -21,6 +21,7 @@ public slots:
 	void clearListBox();
 
 signals:
+	void detectedBadValue(long long value);
 
 private:
 	QLineEdit*		_line;
@@ -28,11 +29,14 @@ private:
 	QPushButton*	_clearButton;
 	QListWidget*	_list;
 	QVBoxLayout*	_vbox;
-	std::set<int>	_lineContainer;
+	std::map<int, Qt::GlobalColor>	_lineContainer;
 
-	void lineParse();
+	bool lineParse();
 	void insertSingleOrRange(int num, int beginNum);
+	void insertValueWithRandomColor(int value);
 
 private slots:
 	void provideContextMenu(const QPoint &pos);
+	void valueError(long long value);
+	void valueRight();
 };
