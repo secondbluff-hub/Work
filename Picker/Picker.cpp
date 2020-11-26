@@ -12,8 +12,10 @@
 #include <QMenu>
 #include <QToolTip>
 #include <QCursor>
+#include <QColor>
 
 #include <utility>
+#include <algorithm>
 
 Picker::Picker(QWidget *parent) : QDialog(parent)
 {
@@ -60,7 +62,7 @@ void Picker::editListBox()
 		for (const auto& n : _lineContainer)
 		{
 			_list->addItem(QString::number(n.first));
-			_list->item(i++)->setForeground(n.second);
+			_list->item(i++)->setBackgroundColor(n.second);
 		}
 
 		_line->clear();
@@ -75,14 +77,16 @@ void Picker::provideContextMenu(const QPoint &pos)
 	QAction* rightClickItem = submenu.exec(item);
 	if (rightClickItem && rightClickItem->text().contains("Delete"))
 	{
-		_list->takeItem(_list->indexAt(pos).row());
+		_lineContainer.erase(_list->takeItem(_list->indexAt(pos).row())->text().toInt());
 	}
 }
 
-void Picker::insertSingleOrRange(int num, int beginNum = -1) {
+void Picker::insertSingleOrRange(int num, int beginNum = -1)
+{
 	if (beginNum >= 0) {
 		int increment = beginNum < num ? 1 : -1;
-		for (int i = beginNum; i != num + increment; i += increment) {
+		for (int i = beginNum; i != num + increment; i += increment)
+		{
 			insertValueWithRandomColor(i);
 		}
 	}
@@ -94,7 +98,85 @@ void Picker::insertSingleOrRange(int num, int beginNum = -1) {
 
 void Picker::insertValueWithRandomColor(int value)
 {
-	_lineContainer.insert(std::make_pair(value, static_cast<Qt::GlobalColor>(rand() % 19)));
+	/*
+	auto rnd = rand() % 2;
+	auto color = QColor	{	rnd >= 0	&&	--rnd < 0	?	0	:	rand() % 255,
+							rnd >= 0	&&	--rnd < 0	?	0	:	rand() % 255,
+							rnd >= 0	&&	--rnd < 0	?	0	:	rand() % 255,
+							200
+						};
+	*/
+	int minRange = 81;
+
+	int hue = rand() % 255;
+	hue = hue < 200 && hue > 150 ? (hue + minRange) % 255 : hue;
+	int saturation = rand() % 105 + 150;
+	int brightness = 210;
+
+	auto it = _lineContainer.emplace(std::make_pair	(value, QColor::fromHsv(hue, saturation, brightness)));
+	if (it.second)
+	{
+
+		if (_lineContainer.size() != 1)
+		{
+			auto copyIt = it.first;
+
+			int hue = 0;
+			int minRange = 100;
+
+			if (it.first != _lineContainer.begin() && *it.first != *_lineContainer.rbegin())
+			{
+				auto nextColor = (++copyIt)->second;
+				--copyIt;
+				auto prevColor = (--copyIt)->second;
+
+				if(abs(prevColor.hslHue() - nextColor.hslHue()) < minRange)
+				{
+					hue = (std::max(prevColor.hslHue(), nextColor.hslHue()) + minRange) % 255;
+				}
+			}
+			else if (it.first == _lineContainer.begin())
+			{
+				hue = ((++copyIt)->second.hslHue() + minRange) % 255;
+			}
+			else
+			{
+				hue = ((--copyIt)->second.hslHue() + minRange) % 255;
+			}
+			/*
+			if (it.first != _lineContainer.begin() && *it.first != *_lineContainer.rbegin())
+			{
+				auto oldColor1 = (++copyIt)->second;
+				--copyIt;
+				auto oldColor2 = (--copyIt)->second;
+				color = {	oldColor1.red()		*	oldColor2.red(),
+							oldColor1.green()	*	oldColor2.green(),
+							oldColor1.blue()	*	oldColor2.blue()
+						};
+			}
+			else if (it.first == _lineContainer.begin())
+			{
+				color = (++copyIt)->second;
+			}
+			else
+			{
+				color = (--copyIt)->second;
+			}
+
+			rnd = rand() % 2;
+			QColor newColor	{	(color.red() != 0	&&	rnd >= 0 && --rnd < 0) || color.red() == 0		?	rand() % 195 + 30	:	0,
+								(color.green() != 0 &&	rnd >= 0 && --rnd < 0) || color.green() == 0	?	rand() % 195 + 30	:	0,
+								(color.blue() != 0	&&	rnd >= 0 && --rnd < 0) || color.blue() == 0		?	rand() % 195 + 30	:	0,
+								200
+							};
+			//it.first->second = newColor.lighter(120).convertTo(QColor::Hsv);
+			*/
+			hue = hue < 200 && hue > 150 ? (hue + minRange) % 255 : hue;
+			it.first->second = QColor::fromHsv(hue, saturation, brightness);
+		}
+	}
+
+	_colorsContainer.emplace(QColor::fromHsv(hue, saturation, brightness));
 }
 
 void Picker::valueError(long long value)
