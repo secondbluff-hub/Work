@@ -13,18 +13,23 @@
 #include <QToolTip>
 #include <QCursor>
 #include <QColor>
+#include <QColorDialog>
 
 #include <utility>
 #include <algorithm>
 
 Picker::Picker(QWidget *parent) : QDialog(parent)
 {
+	std::random_device device;
+	mt_rand.seed(device());
+
 	auto _label = new QLabel(tr("Enter numbers"));
 
 	_line = new QLineEdit;
 	_line->setStyleSheet("border-style: solid, border-width: 1px; border-color: black");
 
-	auto regExp = new QRegularExpression("^[\\d\\s|-]+$");
+	auto regExp = new QRegularExpression("^[\\d*(\\s{1})|(-{1})]+$");
+	//auto regExp = new QRegularExpression("(\\d+(\\s{1})+)|(\\d+\\-{1}\\d+)*\\s*"); // В процессе
 	auto validator = new QRegularExpressionValidator(*regExp);
 	_line->setValidator(validator);
 
@@ -37,7 +42,6 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	hbox->addWidget(_clearButton);
 
 	_list = new QListWidget;
-	_list->setAlternatingRowColors(true);
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
 
@@ -62,7 +66,7 @@ void Picker::editListBox()
 		for (const auto& n : _lineContainer)
 		{
 			_list->addItem(QString::number(n.first));
-			_list->item(i++)->setBackgroundColor(n.second);
+			_list->item(i++)->setBackgroundColor(*n.second);
 		}
 
 		_line->clear();
@@ -73,11 +77,19 @@ void Picker::provideContextMenu(const QPoint &pos)
 {
 	QPoint item = _list->mapToGlobal(pos);
 	QMenu submenu;
-	submenu.addAction("Delete");
+	submenu.addAction("Delete item", this, &Picker::eraseItem);
+	submenu.addAction("Change color", this, &Picker::changeItemColor);
+
+	submenu.addAction("Print HSV color");	// Для отладки
+
 	QAction* rightClickItem = submenu.exec(item);
-	if (rightClickItem && rightClickItem->text().contains("Delete"))
+
+	// Для отладки
+	if (rightClickItem && rightClickItem->text().contains("Print HSV color"))
 	{
-		_lineContainer.erase(_list->takeItem(_list->indexAt(pos).row())->text().toInt());
+		qDebug() << _list->itemAt(pos)->backgroundColor().hue() << ' ' <<
+			_list->itemAt(pos)->backgroundColor().saturation() << ' ' <<
+			_list->itemAt(pos)->backgroundColor().value();
 	}
 }
 
@@ -87,99 +99,91 @@ void Picker::insertSingleOrRange(int num, int beginNum = -1)
 		int increment = beginNum < num ? 1 : -1;
 		for (int i = beginNum; i != num + increment; i += increment)
 		{
-			insertValueWithRandomColor(i);
+			insertValueWithUniqColor(i);
 		}
 	}
 	else
 	{
-		insertValueWithRandomColor(num);
+		insertValueWithUniqColor(num);
 	}
 }
 
-void Picker::insertValueWithRandomColor(int value)
+void Picker::insertValueWithUniqColor(int v)
 {
-	/*
-	auto rnd = rand() % 2;
-	auto color = QColor	{	rnd >= 0	&&	--rnd < 0	?	0	:	rand() % 255,
-							rnd >= 0	&&	--rnd < 0	?	0	:	rand() % 255,
-							rnd >= 0	&&	--rnd < 0	?	0	:	rand() % 255,
-							200
-						};
-	*/
-	int minRange = 81;
+	int hue, saturation, value;
+	generateColor(hue, saturation, value);
 
-	int hue = rand() % 255;
-	hue = hue < 200 && hue > 150 ? (hue + minRange) % 255 : hue;
-	int saturation = rand() % 105 + 150;
-	int brightness = 210;
+	if (_lineContainer.size() != 0)
+	{
+		generateUniqColor(hue, saturation, value);
+	}
 
-	auto it = _lineContainer.emplace(std::make_pair	(value, QColor::fromHsv(hue, saturation, brightness)));
+	auto it = _lineContainer.emplace(std::make_pair	(v, _colorsContainer.emplace(QColor::fromHsv(hue, saturation, value)).first));
 	if (it.second)
 	{
 
-		if (_lineContainer.size() != 1)
+		if (_lineContainer.size() > 1)
 		{
-			auto copyIt = it.first;
-
-			int hue = 0;
-			int minRange = 100;
-
-			if (it.first != _lineContainer.begin() && *it.first != *_lineContainer.rbegin())
+			do
 			{
-				auto nextColor = (++copyIt)->second;
-				--copyIt;
-				auto prevColor = (--copyIt)->second;
+				int minRange = generateRandom(81, 131); // rand() % 50 + 81;
+				auto copyIt = it.first;
 
-				if(abs(prevColor.hslHue() - nextColor.hslHue()) < minRange)
+				if (it.first != _lineContainer.begin() && *it.first != *_lineContainer.rbegin())
 				{
-					hue = (std::max(prevColor.hslHue(), nextColor.hslHue()) + minRange) % 255;
-				}
-			}
-			else if (it.first == _lineContainer.begin())
-			{
-				hue = ((++copyIt)->second.hslHue() + minRange) % 255;
-			}
-			else
-			{
-				hue = ((--copyIt)->second.hslHue() + minRange) % 255;
-			}
-			/*
-			if (it.first != _lineContainer.begin() && *it.first != *_lineContainer.rbegin())
-			{
-				auto oldColor1 = (++copyIt)->second;
-				--copyIt;
-				auto oldColor2 = (--copyIt)->second;
-				color = {	oldColor1.red()		*	oldColor2.red(),
-							oldColor1.green()	*	oldColor2.green(),
-							oldColor1.blue()	*	oldColor2.blue()
-						};
-			}
-			else if (it.first == _lineContainer.begin())
-			{
-				color = (++copyIt)->second;
-			}
-			else
-			{
-				color = (--copyIt)->second;
-			}
+					auto nextColorHue = (++copyIt)->second->hsvHue();
+					--copyIt;
+					auto prevColorHue = (--copyIt)->second->hsvHue();
+					auto colorsDistance = abs(prevColorHue - nextColorHue);
 
-			rnd = rand() % 2;
-			QColor newColor	{	(color.red() != 0	&&	rnd >= 0 && --rnd < 0) || color.red() == 0		?	rand() % 195 + 30	:	0,
-								(color.green() != 0 &&	rnd >= 0 && --rnd < 0) || color.green() == 0	?	rand() % 195 + 30	:	0,
-								(color.blue() != 0	&&	rnd >= 0 && --rnd < 0) || color.blue() == 0		?	rand() % 195 + 30	:	0,
-								200
-							};
-			//it.first->second = newColor.lighter(120).convertTo(QColor::Hsv);
-			*/
-			hue = hue < 200 && hue > 150 ? (hue + minRange) % 255 : hue;
-			it.first->second = QColor::fromHsv(hue, saturation, brightness);
+					if (colorsDistance < minRange * 2)
+					{
+						hue = (std::max(prevColorHue, nextColorHue) + minRange) % 255;
+					}
+					else
+					{
+						hue = colorsDistance / 2;
+					}
+				}
+				else if (it.first == _lineContainer.begin())
+				{
+					hue = ((++copyIt)->second->hsvHue() + minRange) % 255;
+				}
+				else
+				{
+					hue = ((--copyIt)->second->hsvHue() + minRange) % 255;
+				}
+			} while (_colorsContainer.find(QColor::fromHsv(hue, saturation, value)) != _colorsContainer.end());
+			_colorsContainer.erase(*it.first->second);
+			it.first->second = _colorsContainer.emplace(QColor::fromHsv(hue, saturation, value)).first;
 		}
 	}
 
-	_colorsContainer.emplace(QColor::fromHsv(hue, saturation, brightness));
 }
 
-void Picker::valueError(long long value)
+void Picker::generateColor(int & hue, int & saturation, int & value)
+{
+	int minRange = generateRandom(51, 101); // rand() % 50 + 51;
+	hue = generateRandom(1, 255); // rand() % 255;
+	saturation = generateRandom(200, 255); // rand() % 55 + 200;
+	value = generateRandom(200, 255); // rand() % 55 + 200;
+}
+
+void Picker::generateUniqColor(int & hue, int & saturation, int & value)
+{
+	do
+	{
+		generateColor(hue, saturation, value);
+	} while (_colorsContainer.find(QColor::fromHsv(hue, saturation, value)) != _colorsContainer.end());
+}
+
+int Picker::generateRandom(int min, int max)
+{
+	std::uniform_int_distribution<int> range(min, max);
+	return range(mt_rand);
+}
+
+void Picker::valueError(unsigned long long value)
 {
 	_line->setStyleSheet("border-style: solid; border-width: 2px; border-color: red");
 
@@ -200,6 +204,23 @@ void Picker::clearListBox()
 {
 	_list->clear();
 	_lineContainer.clear();
+	_colorsContainer.clear();
+}
+
+void Picker::eraseItem()
+{
+	_colorsContainer.erase(_list->currentItem()->backgroundColor());
+	_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
+}
+
+void Picker::changeItemColor()
+{
+	auto newColor = QColorDialog::getColor(Qt::white, this);
+
+	_colorsContainer.erase(_list->currentItem()->backgroundColor());
+
+	_list->currentItem()->setBackgroundColor(newColor);
+	_lineContainer[_list->currentItem()->text().toInt()] = _colorsContainer.insert(newColor).first;
 }
 
 bool Picker::lineParse()
@@ -213,9 +234,10 @@ bool Picker::lineParse()
 
 		for (const auto& nn : num)
 		{
-			if (nn.toInt() > 0xffff)
+			auto currNum = nn.toULongLong();
+			if (currNum > 0xffff || currNum == 0)
 			{
-				emit detectedBadValue(nn.toInt());
+				emit detectedBadValue(currNum);
 				return false;
 			}
 		}
