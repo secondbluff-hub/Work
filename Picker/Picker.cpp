@@ -14,6 +14,7 @@
 #include <QCursor>
 #include <QColor>
 #include <QColorDialog>
+#include <QMessageBox>
 
 #include <utility>
 #include <algorithm>
@@ -28,30 +29,29 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	_line = new QLineEdit;
 	_line->setStyleSheet("border-style: solid, border-width: 1px; border-color: black");
 
-	auto regExp = new QRegularExpression("^[\\d*(\\s{1})|(-{1})]+$");
-	//auto regExp = new QRegularExpression("(\\d+(\\s{1})+)|(\\d+\\-{1}\\d+)*\\s*"); // В процессе
+	auto regExp = new QRegularExpression("(\\d+(\\-{1}\\d+\\s{1}|\\s{1}))*\\s*");
 	auto validator = new QRegularExpressionValidator(*regExp);
 	_line->setValidator(validator);
 
-	_genButton = new QPushButton("Add");
-	_clearButton = new QPushButton("Clear");
+	auto genButton = new QPushButton("Add");
+	auto clearButton = new QPushButton("Clear");
 
 	auto hbox = new QHBoxLayout;
 	hbox->addWidget(_line);
-	hbox->addWidget(_genButton);
-	hbox->addWidget(_clearButton);
+	hbox->addWidget(genButton);
+	hbox->addWidget(clearButton);
 
 	_list = new QListWidget;
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
 
-	_vbox = new QVBoxLayout(this);
-	_vbox->addWidget(_label);
-	_vbox->addLayout(hbox);
-	_vbox->addWidget(_list);
+	auto vbox = new QVBoxLayout(this);
+	vbox->addWidget(_label);
+	vbox->addLayout(hbox);
+	vbox->addWidget(_list);
 
-	connect(_genButton, &QPushButton::clicked, this, &Picker::editListBox);
-	connect(_clearButton, &QPushButton::clicked, this, &Picker::clearListBox);
+	connect(genButton, &QPushButton::clicked, this, &Picker::editListBox);
+	connect(clearButton, &QPushButton::clicked, this, &Picker::clearListBox);
 
 	connect(this, &Picker::detectedBadValue, this, &Picker::valueError);
 }
@@ -80,14 +80,15 @@ void Picker::provideContextMenu(const QPoint &pos)
 	submenu.addAction("Delete item", this, &Picker::eraseItem);
 	submenu.addAction("Change color", this, &Picker::changeItemColor);
 
-	submenu.addAction("Print HSV color");	// Для отладки
+	submenu.addAction("Print HSV color");	// For debugging
 
 	QAction* rightClickItem = submenu.exec(item);
 
-	// Для отладки
+	// For debugging
 	if (rightClickItem && rightClickItem->text().contains("Print HSV color"))
 	{
-		qDebug() << _list->itemAt(pos)->backgroundColor().hue() << ' ' <<
+		qDebug() << _list->itemAt(pos)->text() << ": " <<
+			_list->itemAt(pos)->backgroundColor().hue() << ' ' <<
 			_list->itemAt(pos)->backgroundColor().saturation() << ' ' <<
 			_list->itemAt(pos)->backgroundColor().value();
 	}
@@ -111,73 +112,51 @@ void Picker::insertSingleOrRange(int num, int beginNum = -1)
 void Picker::insertValueWithUniqColor(int v)
 {
 	int hue, saturation, value;
-	generateColor(hue, saturation, value);
+	static int lastHue;
 
-	if (_lineContainer.size() != 0)
+	static auto generateColor = [&]
 	{
-		generateUniqColor(hue, saturation, value);
-	}
+		hue = generateRandom(0, 359);
+		saturation = generateRandom(200, 255);
+		value = generateRandom(200, 255);
+	};
 
-	auto it = _lineContainer.emplace(std::make_pair	(v, _colorsContainer.emplace(QColor::fromHsv(hue, saturation, value)).first));
-	if (it.second)
+	static auto generateUniqColor = [&]
 	{
-
-		if (_lineContainer.size() > 1)
+		static int minRange = 75;
+		//static int maxRange = 360 - minRange / 2;
+		do
 		{
-			do
-			{
-				int minRange = generateRandom(81, 131); // rand() % 50 + 81;
-				auto copyIt = it.first;
+			generateColor();
+		} while (abs(hue - lastHue) < minRange || 
+			_colorsContainer.find(QColor::fromHsv(hue, saturation, value)) != _colorsContainer.end());
+	};
 
-				if (it.first != _lineContainer.begin() && *it.first != *_lineContainer.rbegin())
-				{
-					auto nextColorHue = (++copyIt)->second->hsvHue();
-					--copyIt;
-					auto prevColorHue = (--copyIt)->second->hsvHue();
-					auto colorsDistance = abs(prevColorHue - nextColorHue);
-
-					if (colorsDistance < minRange * 2)
-					{
-						hue = (std::max(prevColorHue, nextColorHue) + minRange) % 255;
-					}
-					else
-					{
-						hue = colorsDistance / 2;
-					}
-				}
-				else if (it.first == _lineContainer.begin())
-				{
-					hue = ((++copyIt)->second->hsvHue() + minRange) % 255;
-				}
-				else
-				{
-					hue = ((--copyIt)->second->hsvHue() + minRange) % 255;
-				}
-			} while (_colorsContainer.find(QColor::fromHsv(hue, saturation, value)) != _colorsContainer.end());
-			_colorsContainer.erase(*it.first->second);
-			it.first->second = _colorsContainer.emplace(QColor::fromHsv(hue, saturation, value)).first;
-		}
-	}
-
-}
-
-void Picker::generateColor(int & hue, int & saturation, int & value)
-{
-	int minRange = generateRandom(51, 101); // rand() % 50 + 51;
-	hue = generateRandom(1, 255); // rand() % 255;
-	saturation = generateRandom(200, 255); // rand() % 55 + 200;
-	value = generateRandom(200, 255); // rand() % 55 + 200;
-}
-
-void Picker::generateUniqColor(int & hue, int & saturation, int & value)
-{
-	do
+	if (_colorsContainer.size() <= 30 && _colorsContainer.size() > 0)
 	{
-		generateColor(hue, saturation, value);
-	} while (_colorsContainer.find(QColor::fromHsv(hue, saturation, value)) != _colorsContainer.end());
+		generateColor();
+		int step = 144;
+		hue = (lastHue + step);
+		if ((_colorsContainer.size() + 1) % 5 == 0)
+		{
+			hue += 12;
+		}
+		hue %= 360;
+	}
+	else
+	{
+		generateUniqColor();
+	}
+	lastHue = hue;
+	_lineContainer.emplace	(
+							std::make_pair	(
+								v, 
+								_colorsContainer.emplace(QColor::fromHsv(hue, saturation, value)).first
+											)
+							);
 }
 
-int Picker::generateRandom(int min, int max)
+inline int Picker::generateRandom(int min, int max)
 {
 	std::uniform_int_distribution<int> range(min, max);
 	return range(mt_rand);
@@ -190,14 +169,24 @@ void Picker::valueError(unsigned long long value)
 	auto messageError = tr("Bad value: ") + QString::number(value);
 	QToolTip::showText(QCursor::pos(), messageError);
 
-	connect(_line, &QLineEdit::textChanged, this, &Picker::valueRight);
+	connect(_line, &QLineEdit::textChanged, this, &Picker::valueChanged);
 }
 
-void Picker::valueRight()
+void Picker::valueChanged()
 {
 	_line->setStyleSheet("border-style: solid; border-width: 1px; border-color: black");
 
-	disconnect(_line, &QLineEdit::textChanged, this, &Picker::valueRight);
+	disconnect(_line, &QLineEdit::textChanged, this, &Picker::valueChanged);
+}
+
+std::map<int, QColor> Picker::numbersToColors() const
+{
+	std::map<int, QColor> result;
+	for (const auto item : _lineContainer)
+	{
+		result[item.first] = *item.second;
+	}
+	return result;
 }
 
 void Picker::clearListBox()
@@ -215,11 +204,38 @@ void Picker::eraseItem()
 
 void Picker::changeItemColor()
 {
-	auto newColor = QColorDialog::getColor(Qt::white, this);
+	auto newColor = QColorDialog::getColor(_list->currentItem()->backgroundColor(), this);
 
 	_colorsContainer.erase(_list->currentItem()->backgroundColor());
 
 	_list->currentItem()->setBackgroundColor(newColor);
+
+	int minRange = 360 / (_colorsContainer.size() + 1);
+	int maxRange = 360 - minRange / 2;
+	bool isContrast = true;
+	for (const auto color : _colorsContainer)
+	{
+		if (	abs(newColor.hue() - color.hue()) < minRange ||
+				abs(newColor.hue() - color.hue()) > maxRange	)
+		{
+			isContrast = false;
+			break;
+		}
+	}
+
+	if (!isContrast)
+	{
+		QMessageBox msgBox(this);
+		msgBox.setWindowTitle("Warning");
+		msgBox.setText("New color of number " + _list->currentItem()->text() + " is not contrasting");
+		auto changeButton = new QPushButton("Change color");
+		msgBox.addButton(QMessageBox::Save);
+		msgBox.addButton(changeButton, QMessageBox::ActionRole);
+		msgBox.setDefaultButton(changeButton);
+		connect(changeButton, &QPushButton::clicked, this, &Picker::changeItemColor);
+		msgBox.exec();
+	}
+
 	_lineContainer[_list->currentItem()->text().toInt()] = _colorsContainer.insert(newColor).first;
 }
 
