@@ -10,11 +10,8 @@ class QListWidget;
 class QLineEdit;
 class QColor;
 
-struct QColorHash {
-	inline std::size_t operator()(const QColor& v) const {
-		return v.hue() * 31 + v.saturation() + v.value();
-	}
-};
+template <typename T>
+int generateRandom(T& mt_rand, int min, int max);
 
 class Picker : public QDialog
 {
@@ -33,20 +30,19 @@ signals:
 	void detectedBadValue(unsigned long long value) const;
 
 private:
-	using ColorsConIter = typename std::unordered_set<QColor, QColorHash>::iterator;
-
-	QLineEdit*								_line;
-	QListWidget*							_list;
-	std::map<int, ColorsConIter>			_lineContainer;
-	std::unordered_set<QColor, QColorHash>	_colorsContainer;
-	std::mt19937 mt_rand;
+	QWidget*				_parent;
+	QLineEdit*				_line;
+	QListWidget*			_list;
+	std::map<int, QColor>	_lineContainer;
+	mutable std::mt19937 mt_rand;
 
 	bool lineParse();
 	void insertSingleOrRange(int num, int beginNum);
 	void insertValueWithUniqColor(int value);
-	
-	inline int generateRandom(int min, int max);
 
+	QColor generateColor() const;
+	QColor generateUniqColor() const;
+	
 private slots:
 	void provideContextMenu(const QPoint &pos);
 
@@ -55,4 +51,6 @@ private slots:
 
 	void eraseItem();
 	void changeItemColor();
+
+	void saveAndClose();
 };

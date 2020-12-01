@@ -36,9 +36,15 @@
     <ClCompile Include="Picker.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ColorSchemesWidget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Picker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
+    <QtMoc Include="ColorSchemesWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
   </ItemGroup>
@@ -46,5 +52,10 @@
     <QtRcc Include="Picker.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="ColorSchemesWidget.ui">
+      <Filter>Form Files</Filter>
+    </QtUic>
   </ItemGroup>
 </Project>
