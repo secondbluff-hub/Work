@@ -1,5 +1,5 @@
 #include "Picker.h"
-#include "ColorGenerated.h"
+#include "ColorGenerate.h"
 #include "ColorSchemesWidget.h"
 
 #include <QRegularExpressionValidator>
@@ -121,7 +121,7 @@ void Picker::insertValueWithContrastColor(int v)
 {
 	static int lastHue = 0;
 	_lineContainer.emplace	(	std::make_pair(v,
-								ColorGenerated::generateContrastColor(lastHue, _lineContainer))
+								ColorGenerate::generateContrastColor(lastHue, _lineContainer))
 							);
 }
 
@@ -165,7 +165,7 @@ void Picker::changeItemColor()
 	_list->currentItem()->setBackgroundColor(newColor);
 	int num;
 
-	if (ColorGenerated::isContrastColor(newColor, _lineContainer, num))
+	if (ColorGenerate::isContrastColor(newColor, _lineContainer, num))
 	{
 		QMessageBox msgBox(this);
 		msgBox.setWindowTitle("Warning");
