@@ -1,17 +1,13 @@
 #pragma once
 
-#include <QtWidgets/QDialog>
-
 #include <map>
 #include <unordered_set>
-#include <random>
+
+#include <QtWidgets/QDialog>
 
 class QListWidget;
 class QLineEdit;
 class QColor;
-
-template <typename T>
-int generateRandom(T& mt_rand, int min, int max);
 
 class Picker : public QDialog
 {
@@ -33,15 +29,12 @@ private:
 	QWidget*				_parent;
 	QLineEdit*				_line;
 	QListWidget*			_list;
+
 	std::map<int, QColor>	_lineContainer;
-	mutable std::mt19937 mt_rand;
 
 	bool lineParse();
 	void insertSingleOrRange(int num, int beginNum);
-	void insertValueWithUniqColor(int value);
-
-	QColor generateColor() const;
-	QColor generateUniqColor() const;
+	void insertValueWithContrastColor(int value);
 	
 private slots:
 	void provideContextMenu(const QPoint &pos);

@@ -39,6 +39,9 @@
     <ClCompile Include="ColorSchemesWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ColorGenerated.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Picker.h">
@@ -54,8 +57,8 @@
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="ColorSchemesWidget.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
+    <ClInclude Include="ColorGenerated.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

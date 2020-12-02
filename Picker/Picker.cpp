@@ -1,4 +1,5 @@
 #include "Picker.h"
+#include "ColorGenerated.h"
 #include "ColorSchemesWidget.h"
 
 #include <QRegularExpressionValidator>
@@ -17,22 +18,11 @@
 #include <QColorDialog>
 #include <QMessageBox>
 
-template <typename T>
-int generateRandom(T& mt_rand, int min, int max)
-{
-	std::uniform_int_distribution<int> range(min, max);
-	return range(mt_rand);
-}
-
-
 Picker::Picker(QWidget *parent) : QDialog(parent)
 {
 	_parent = parent;
 
 	this->setWindowTitle("Color picker");
-
-	std::random_device device;
-	mt_rand.seed(device());
 
 	auto _label = new QLabel(tr("Enter numbers"));
 
@@ -118,71 +108,21 @@ void Picker::insertSingleOrRange(int num, int beginNum = -1)
 		int increment = beginNum < num ? 1 : -1;
 		for (int i = beginNum; i != num + increment; i += increment)
 		{
-			insertValueWithUniqColor(i);
+			insertValueWithContrastColor(i);
 		}
 	}
 	else
 	{
-		insertValueWithUniqColor(num);
+		insertValueWithContrastColor(num);
 	}
 }
 
-void Picker::insertValueWithUniqColor(int v)
+void Picker::insertValueWithContrastColor(int v)
 {
-	QColor color = generateColor();
-	static int lastHue;
-
-	if (_lineContainer.size() <= 30 && _lineContainer.size() > 0)
-	{
-		int hue = color.hue();
-		int step = 144;
-		hue = (lastHue + step);
-		if ((_lineContainer.size() + 1) % 5 == 0)
-		{
-			hue += 12;
-		}
-		hue %= 360;
-		color.setHsv(hue, color.saturation(), color.value());
-	}
-	else
-	{
-		color = generateUniqColor();
-	}
-
-	lastHue = color.hue();
-	_lineContainer.emplace(std::make_pair(v,color));
-}
-
-QColor Picker::generateColor() const
-{
-	return QColor::fromHsv(	generateRandom(mt_rand, 0, 359),
-							generateRandom(mt_rand, 200, 255),
-							generateRandom(mt_rand, 200, 255));
-}
-
-QColor Picker::generateUniqColor() const
-{
-	//static int minRange = 75;
-	//static int maxRange = 360 - minRange / 2;
-	auto isUniqColor = [&_lineContainer = _lineContainer](const QColor& color)
-	{
-		for (const auto& numToColor : _lineContainer)
-		{
-			if (numToColor.second == color) {
-				return false;
-			}
-		}
-		return true;
-	};
-
-	QColor color;
-
-	do
-	{
-		color = generateColor();
-	} while (!isUniqColor(color));
-
-	return color;
+	static int lastHue = 0;
+	_lineContainer.emplace	(	std::make_pair(v,
+								ColorGenerated::generateContrastColor(lastHue, _lineContainer))
+							);
 }
 
 void Picker::valueError(unsigned long long value)
@@ -223,23 +163,9 @@ void Picker::changeItemColor()
 	auto newColor = QColorDialog::getColor(_list->currentItem()->backgroundColor(), this);
 
 	_list->currentItem()->setBackgroundColor(newColor);
-
-	int minRange = 360 / (_lineContainer.size() + 1);
-	int maxRange = 360 - minRange / 2;
-	bool isContrast = true;
 	int num;
-	for (const auto numToColor : _lineContainer)
-	{
-		if (	abs(newColor.hue() - numToColor.second.hue()) < minRange ||
-				abs(newColor.hue() - numToColor.second.hue()) > maxRange	)
-		{
-			num = numToColor.first;
-			isContrast = false;
-			break;
-		}
-	}
 
-	if (!isContrast)
+	if (ColorGenerated::isContrastColor(newColor, _lineContainer, num))
 	{
 		QMessageBox msgBox(this);
 		msgBox.setWindowTitle("Warning");

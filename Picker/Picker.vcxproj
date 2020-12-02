@@ -113,6 +113,7 @@
     </QtRcc>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ColorGenerated.cpp" />
     <ClCompile Include="ColorSchemesWidget.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Picker.cpp" />
@@ -130,7 +131,7 @@
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <QtUic Include="ColorSchemesWidget.ui" />
+    <ClInclude Include="ColorGenerated.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

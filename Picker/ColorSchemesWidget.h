@@ -23,6 +23,8 @@ public slots:
 	void clearTable();
 	void selectKit();
 
+	void editTable();
+
 signals:
 	void dataChanged(bool isChanged = true);
 

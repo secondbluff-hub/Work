@@ -34,6 +34,7 @@ ColorSchemesWidget::ColorSchemesWidget(QWidget *parent)
 	connect(selectBtn, &QPushButton::clicked, this, &ColorSchemesWidget::selectKit);
 
 	connect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::setWindowModified);
+	connect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::editTable);
 
 	auto hbox = new QHBoxLayout;
 	hbox->addSpacing(200);
@@ -63,6 +64,11 @@ void ColorSchemesWidget::clearTable()
 void ColorSchemesWidget::selectKit()
 {
 	qDebug() << "Call select";
+}
+
+void ColorSchemesWidget::editTable()
+{
+
 }
 
 void ColorSchemesWidget::createKit()
