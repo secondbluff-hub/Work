@@ -1,6 +1,5 @@
 #include "Picker.h"
-#include "ColorGenerated.h"
-#include "ColorSchemesWidget.h"
+#include "ColorGenerate.h"
 
 #include <QRegularExpressionValidator>
 #include <QRegularExpression>
@@ -20,9 +19,7 @@
 
 Picker::Picker(QWidget *parent) : QDialog(parent)
 {
-	_parent = parent;
-
-	this->setWindowTitle("Color picker");
+	setWindowTitle("Color picker");
 
 	auto _label = new QLabel(tr("Enter numbers"));
 
@@ -56,7 +53,7 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	lowHBox->addWidget(okButton);
 	vbox->addLayout(lowHBox);
 
-	connect(okButton, &QPushButton::clicked, this, &Picker::saveAndClose);
+	connect(okButton, &QPushButton::clicked, this, &Picker::accept);
 
 	connect(genButton, &QPushButton::clicked, this, &Picker::editListBox);
 	connect(clearButton, &QPushButton::clicked, this, &Picker::clearListBox);
@@ -121,7 +118,7 @@ void Picker::insertValueWithContrastColor(int v)
 {
 	static int lastHue = 0;
 	_lineContainer.emplace	(	std::make_pair(v,
-								ColorGenerated::generateContrastColor(lastHue, _lineContainer))
+								ColorGenerate::generateContrastColor(lastHue, _lineContainer))
 							);
 }
 
@@ -142,9 +139,9 @@ void Picker::valueChanged()
 	disconnect(_line, &QLineEdit::textChanged, this, &Picker::valueChanged);
 }
 
-std::map<int, QColor> Picker::numbersToColors() const
+std::map<int, QColor>&& Picker::numbersToColors()
 {
-	return _lineContainer;
+	return std::move(_lineContainer);
 }
 
 void Picker::clearListBox()
@@ -165,7 +162,7 @@ void Picker::changeItemColor()
 	_list->currentItem()->setBackgroundColor(newColor);
 	int num;
 
-	if (ColorGenerated::isContrastColor(newColor, _lineContainer, num))
+	if (ColorGenerate::isContrastColor(newColor, _lineContainer, num))
 	{
 		QMessageBox msgBox(this);
 		msgBox.setWindowTitle("Warning");
@@ -179,12 +176,6 @@ void Picker::changeItemColor()
 	}
 
 	_lineContainer[_list->currentItem()->text().toInt()] = newColor;
-}
-
-void Picker::saveAndClose()
-{
-	dynamic_cast<ColorSchemesWidget*>(_parent)->insertData(std::move(_lineContainer));
-	this->close();
 }
 
 bool Picker::lineParse()

@@ -16,7 +16,7 @@ class Picker : public QDialog
 public:
 	Picker(QWidget *parent = Q_NULLPTR);
 
-	std::map<int, QColor> numbersToColors() const;
+	std::map<int, QColor>&& numbersToColors();
 
 public slots:
 	void editListBox();
@@ -26,7 +26,6 @@ signals:
 	void detectedBadValue(unsigned long long value) const;
 
 private:
-	QWidget*				_parent;
 	QLineEdit*				_line;
 	QListWidget*			_list;
 
@@ -44,6 +43,4 @@ private slots:
 
 	void eraseItem();
 	void changeItemColor();
-
-	void saveAndClose();
 };

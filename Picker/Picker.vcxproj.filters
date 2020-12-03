@@ -39,7 +39,10 @@
     <ClCompile Include="ColorSchemesWidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ColorGenerated.cpp">
+    <ClCompile Include="ColorGenerate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorsDelegate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -50,6 +53,9 @@
     <QtMoc Include="ColorSchemesWidget.h">
       <Filter>Header Files</Filter>
     </QtMoc>
+    <QtMoc Include="ColorsDelegate.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="Picker.qrc">
@@ -57,7 +63,7 @@
     </QtRcc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ColorGenerated.h">
+    <ClInclude Include="ColorGenerate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

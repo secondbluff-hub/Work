@@ -1,5 +1,6 @@
 #include "ColorSchemesWidget.h"
 #include "Picker.h"
+#include "ColorsDelegate.h"
 
 #include <QVBoxLayout>
 #include <QTreeView>
@@ -7,20 +8,25 @@
 #include <QStandardItemModel>
 #include <QList>
 #include <QColor>
+#include <QInputDialog>
+#include <QString>
 #include <qDebug>
 
 ColorSchemesWidget::ColorSchemesWidget(QWidget *parent)
 	: QWidget(parent)
 {
-	this->setWindowTitle("ColorSchemesWidget[*]");
+	setWindowTitle("ColorSchemesWidget[*]");
 
-	auto model = new QStandardItemModel();
-	model->setColumnCount(2);
-	model->setHeaderData(0, Qt::Orientation::Horizontal, "Name");
-	model->setHeaderData(1, Qt::Orientation::Horizontal, "Colors");
+	_model = new QStandardItemModel(this);
+	_model->setColumnCount(2);
+	_model->setHeaderData(0, Qt::Orientation::Horizontal, "Name");
+	_model->setHeaderData(1, Qt::Orientation::Horizontal, "Colors");
+
+	_delegate = new ColorsDelegate(this);
 
 	_table = new QTreeView(this);
-	_table->setModel(model);
+	_table->setModel(_model);
+	_table->setItemDelegateForColumn(1, _delegate);
 
 	auto vbox = new QVBoxLayout(this);
 	vbox->addWidget(_table);
@@ -34,7 +40,6 @@ ColorSchemesWidget::ColorSchemesWidget(QWidget *parent)
 	connect(selectBtn, &QPushButton::clicked, this, &ColorSchemesWidget::selectKit);
 
 	connect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::setWindowModified);
-	connect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::editTable);
 
 	auto hbox = new QHBoxLayout;
 	hbox->addSpacing(200);
@@ -59,6 +64,10 @@ ColorSchemesWidget::~ColorSchemesWidget()
 void ColorSchemesWidget::clearTable()
 {
 	_data.clear();
+
+	_model->setRowCount(0);
+
+	emit dataChanged();
 }
 
 void ColorSchemesWidget::selectKit()
@@ -68,24 +77,23 @@ void ColorSchemesWidget::selectKit()
 
 void ColorSchemesWidget::editTable()
 {
-
+	
 }
 
 void ColorSchemesWidget::createKit()
 {
-	auto w = new Picker(this);
-	w->show();
-}
+	QString name = QInputDialog::getText(this, "Name creator",
+		"Enter a name for the new set:",
+		QLineEdit::Normal, "");
 
-void ColorSchemesWidget::insertData(std::map<int, QColor>&& newData)
-{
-	auto oldSize = _data.size();
-	_data.insert(make_move_iterator(newData.begin()), make_move_iterator(newData.end()));
-	if(oldSize - _data.size() > 0)
+	Picker w(this);
+	if (w.exec() == QDialog::Accepted)
 	{
-		emit dataChanged();
-		disconnect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::setWindowModified);
+		_data.push_back(std::make_pair(std::move(name), w.numbersToColors()));
+		auto nameItem = new QStandardItem(_data.back().first);
+		auto colorsItem = new QStandardItem("ColorScheme");
+		_model->appendRow({ nameItem, colorsItem });
 	}
 
-	qDebug() << _data.size();
+	emit dataChanged();
 }

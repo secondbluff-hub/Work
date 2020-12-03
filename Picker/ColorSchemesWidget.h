@@ -2,10 +2,15 @@
 
 #include <QWidget>
 
+#include <vector>
 #include <map>
+#include <utility>
 
 class QTreeView;
 class QColor;
+class QStandardItemModel;
+class ColorsDelegate;
+class QString;
 
 class ColorSchemesWidget : public QWidget
 {
@@ -15,8 +20,6 @@ public:
 	ColorSchemesWidget(QWidget *parent = Q_NULLPTR);
 	ColorSchemesWidget(const QString& folder, QWidget *parent = Q_NULLPTR);
 	~ColorSchemesWidget();
-
-	void insertData(std::map<int, QColor>&& newData);
 
 public slots:
 	void createKit();
@@ -29,8 +32,10 @@ signals:
 	void dataChanged(bool isChanged = true);
 
 private:
-	QTreeView*				_table;
-	std::map<int, QColor>	_data;
+	QTreeView*												_table;
+	QStandardItemModel*										_model;
+	ColorsDelegate*											_delegate;
+	std::vector<std::pair<QString, std::map<int, QColor>>>	_data;
 
 private slots:
 
