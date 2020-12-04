@@ -38,7 +38,7 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	hbox->addWidget(genButton);
 	hbox->addWidget(clearButton);
 
-	_list = new QListWidget;
+	_list = new QListWidget(this);
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
 
@@ -48,7 +48,7 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	vbox->addWidget(_list);
 
 	auto okButton = new QPushButton("OK");
-	auto lowHBox = new QHBoxLayout;
+	auto lowHBox = new QHBoxLayout(this);
 	lowHBox->addSpacing(200);
 	lowHBox->addWidget(okButton);
 	vbox->addLayout(lowHBox);

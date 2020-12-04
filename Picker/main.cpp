@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
 
-	ColorSchemesWidget w;
+	ColorSchemesWidget w("filename.data");
 	//Picker w;
 	w.show();
 
