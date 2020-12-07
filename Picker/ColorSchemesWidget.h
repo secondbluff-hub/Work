@@ -21,14 +21,13 @@ class ColorSchemesWidget : public QWidget
 public:
 	using DataType = std::vector<std::pair<QString, std::map<int, QColor>>>;
 
-	ColorSchemesWidget(QWidget *parent = Q_NULLPTR);
-	ColorSchemesWidget(const QString& folder, QWidget *parent = Q_NULLPTR);
+	explicit ColorSchemesWidget(const QString& folder, QWidget *parent = Q_NULLPTR);
 	~ColorSchemesWidget();
 
 public slots:
 
 signals:
-	void dataChanged(bool isChanged = true);
+	void dataChanged(bool isChanged = true) const;
 
 private:
 	QTreeView*				_table;
@@ -37,12 +36,17 @@ private:
 	QDataStream				_ioFile;
 	DataType				_data;
 
-	bool isUniqName(const QString & name);
+	bool isUniqName(const QString & name) const;
 	void appendTable();
-	void updateFile();
 
 private slots:
+	void provideContextMenu(const QPoint &pos);
+
 	void createKit();
 	void clearTable();
-	void selectKit();
+	void selectKit() const;
+
+	void eraseLine();
+	void copyLine();
+	void editTableLine();
 };

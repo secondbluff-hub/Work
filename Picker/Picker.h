@@ -15,6 +15,7 @@ class Picker : public QDialog
 
 public:
 	Picker(QWidget *parent = Q_NULLPTR);
+	explicit Picker(std::map<int, QColor> container, QWidget *parent = Q_NULLPTR);
 
 	std::map<int, QColor>&& numbersToColors();
 
@@ -34,7 +35,9 @@ private:
 	bool lineParse();
 	void insertSingleOrRange(int num, int beginNum);
 	void insertValueWithContrastColor(int value);
-	
+
+	void addListItem(int num, const QColor& color);
+
 private slots:
 	void provideContextMenu(const QPoint &pos);
 

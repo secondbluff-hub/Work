@@ -40,6 +40,7 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 
 	_list = new QListWidget(this);
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(_list, &QListWidget::doubleClicked, this, &Picker::changeItemColor);
 	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
 
 	auto vbox = new QVBoxLayout(this);
@@ -61,6 +62,17 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	connect(this, &Picker::detectedBadValue, this, &Picker::valueError);
 }
 
+Picker::Picker(const std::map<int, QColor>& container, QWidget * parent)
+	: Picker(parent)
+{
+	_lineContainer = container;
+
+	for (const auto& n : _lineContainer)
+	{
+		addListItem(n.first, n.second);
+	}
+}
+
 void Picker::editListBox()
 {
 	_list->clear();
@@ -70,8 +82,7 @@ void Picker::editListBox()
 		int i = 0;
 		for (const auto& n : _lineContainer)
 		{
-			_list->addItem(QString::number(n.first));
-			_list->item(i++)->setBackgroundColor(n.second);
+			addListItem(n.first, n.second);
 		}
 
 		_line->clear();
@@ -83,7 +94,6 @@ void Picker::provideContextMenu(const QPoint &pos)
 	QPoint item = _list->mapToGlobal(pos);
 	QMenu submenu;
 	submenu.addAction("Delete item", this, &Picker::eraseItem);
-	submenu.addAction("Change color", this, &Picker::changeItemColor);
 
 	submenu.addAction("Print HSV color");	// For debugging
 
@@ -120,6 +130,12 @@ void Picker::insertValueWithContrastColor(int v)
 	_lineContainer.emplace	(	std::make_pair(v,
 								ColorGenerate::generateContrastColor(lastHue, _lineContainer))
 							);
+}
+
+void Picker::addListItem(int num, const QColor & color)
+{
+	_list->addItem(QString::number(num));
+	_list->item(_list->count() - 1)->setBackgroundColor(color);
 }
 
 void Picker::valueError(unsigned long long value)
