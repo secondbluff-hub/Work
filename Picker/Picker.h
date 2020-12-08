@@ -15,7 +15,7 @@ class Picker : public QDialog
 
 public:
 	Picker(QWidget *parent = Q_NULLPTR);
-	explicit Picker(std::map<int, QColor> container, QWidget *parent = Q_NULLPTR);
+	explicit Picker(const std::map<int, QColor>& container, QWidget *parent = Q_NULLPTR);
 
 	std::map<int, QColor>&& numbersToColors();
 
@@ -25,6 +25,7 @@ public slots:
 
 signals:
 	void detectedBadValue(unsigned long long value) const;
+	void containerChanged(bool isChaged);
 
 private:
 	QLineEdit*				_line;

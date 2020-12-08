@@ -19,7 +19,7 @@
 
 Picker::Picker(QWidget *parent) : QDialog(parent)
 {
-	setWindowTitle("Color picker");
+	setWindowTitle("Color picker[*]");
 
 	auto _label = new QLabel(tr("Enter numbers"));
 
@@ -49,8 +49,13 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	vbox->addWidget(_list);
 
 	auto okButton = new QPushButton("OK");
+	okButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+	auto spacer = new QSpacerItem(200, 0, QSizePolicy::MinimumExpanding, QSizePolicy::Fixed);
+
 	auto lowHBox = new QHBoxLayout(this);
-	lowHBox->addSpacing(200);
+
+	lowHBox->addSpacerItem(spacer);
 	lowHBox->addWidget(okButton);
 	vbox->addLayout(lowHBox);
 
@@ -71,6 +76,8 @@ Picker::Picker(const std::map<int, QColor>& container, QWidget * parent)
 	{
 		addListItem(n.first, n.second);
 	}
+
+	connect(this, &Picker::containerChanged, this, &Picker::setWindowModified);
 }
 
 void Picker::editListBox()
@@ -86,6 +93,8 @@ void Picker::editListBox()
 		}
 
 		_line->clear();
+
+		emit containerChanged(true);
 	}
 }
 
@@ -130,6 +139,8 @@ void Picker::insertValueWithContrastColor(int v)
 	_lineContainer.emplace	(	std::make_pair(v,
 								ColorGenerate::generateContrastColor(lastHue, _lineContainer))
 							);
+
+	emit containerChanged(true);
 }
 
 void Picker::addListItem(int num, const QColor & color)
@@ -164,11 +175,15 @@ void Picker::clearListBox()
 {
 	_list->clear();
 	_lineContainer.clear();
+
+	emit containerChanged(true);
 }
 
 void Picker::eraseItem()
 {
 	_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
+
+	emit containerChanged(true);
 }
 
 void Picker::changeItemColor()
@@ -192,6 +207,8 @@ void Picker::changeItemColor()
 	}
 
 	_lineContainer[_list->currentItem()->text().toInt()] = newColor;
+
+	emit containerChanged(true);
 }
 
 bool Picker::lineParse()
