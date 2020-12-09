@@ -40,6 +40,7 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 
 	_list = new QListWidget(this);
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
+	_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	connect(_list, &QListWidget::doubleClicked, this, &Picker::changeItemColor);
 	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
 
@@ -102,14 +103,14 @@ void Picker::provideContextMenu(const QPoint &pos)
 {
 	QPoint item = _list->mapToGlobal(pos);
 	QMenu submenu;
-	submenu.addAction("Delete item", this, &Picker::eraseItem);
+	submenu.addAction("Delete", this, &Picker::erase);
 
-	submenu.addAction("Print HSV color");	// For debugging
+	auto printAct = submenu.addAction("Print HSV color");	// For debugging
 
 	QAction* rightClickItem = submenu.exec(item);
 
 	// For debugging
-	if (rightClickItem && rightClickItem->text().contains("Print HSV color"))
+	if (rightClickItem == printAct)
 	{
 		qDebug() << _list->itemAt(pos)->text() << ": " <<
 			_list->itemAt(pos)->backgroundColor().hue() << ' ' <<
@@ -179,9 +180,18 @@ void Picker::clearListBox()
 	emit containerChanged(true);
 }
 
-void Picker::eraseItem()
+void Picker::erase()
 {
-	_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
+	for (int i = 0; i < _lineContainer.size(); ++i)
+	{
+		if (_list->selectionModel()->isRowSelected(i, QModelIndex()))
+		{
+			_lineContainer.erase(_list->takeItem(i)->text().toInt());
+			--i;
+		}
+	}
+
+	//_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
 
 	emit containerChanged(true);
 }
@@ -222,7 +232,7 @@ bool Picker::lineParse()
 
 		for (const auto& nn : num)
 		{
-			auto currNum = nn.toULongLong();
+			auto currNum = nn.toInt();
 			if (currNum > 0xffff || currNum == 0)
 			{
 				emit detectedBadValue(currNum);

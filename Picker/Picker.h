@@ -24,7 +24,7 @@ public slots:
 	void clearListBox();
 
 signals:
-	void detectedBadValue(unsigned long long value) const;
+	void detectedBadValue(int value) const;
 	void containerChanged(bool isChaged);
 
 private:
@@ -45,6 +45,6 @@ private slots:
 	void valueError(unsigned long long value);
 	void valueChanged();
 
-	void eraseItem();
+	void erase();
 	void changeItemColor();
 };

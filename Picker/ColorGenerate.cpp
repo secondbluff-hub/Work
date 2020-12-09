@@ -46,12 +46,16 @@ QColor ColorGenerate::generateContrastColor(int & lastHue,
 	{
 		int hue = color.hue();
 		int step = 144;
+
 		hue = (lastHue + step);
+
 		if ((colors.size() + 1) % 5 == 0)
 		{
 			hue += 12;
 		}
+
 		hue %= 360;
+
 		color.setHsv(hue, color.saturation(), color.value());
 	}
 	else
@@ -67,18 +71,21 @@ QColor ColorGenerate::generateContrastColor(int & lastHue,
 bool ColorGenerate::isContrastColor(const QColor & color,
 											const std::map<int, QColor>& colors, int & num)
 {
-	int minRange = 360 / (colors.size() + 1);
+	int minRange = 360 / (colors.size());
 	int maxRange = 360 - minRange / 2;
 
 	for (const auto numToColor : colors)
 	{
-		if (abs(color.hue() - numToColor.second.hue()) < minRange ||
-			abs(color.hue() - numToColor.second.hue()) > maxRange)
+		auto range = abs(color.hue() - numToColor.second.hue());
+
+		if (range < minRange || range > maxRange)
 		{
 			num = numToColor.first;
+
 			return false;
 		}
 	}
+
 	return true;
 }
 

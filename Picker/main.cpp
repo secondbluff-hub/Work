@@ -1,14 +1,15 @@
-#include "Picker.h"
-#include "ColorSchemesWidget.h"
+#include "ColorSchemeModel.h"
+
 #include <QtWidgets/QApplication>
+#include <QDebug>
 
 int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
 
-	ColorSchemesWidget w("filename.data");
-	//Picker w;
-	w.show();
+	ColorSchemeModel m("filename.data");
 
-	return app.exec();
+	qDebug() << m.chooseScheme().size();
+
+	return 0;
 }

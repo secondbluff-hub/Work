@@ -7,6 +7,11 @@ class ColorsDelegate : public QItemDelegate
 	Q_OBJECT
 
 public:
+	enum Roles
+	{
+		ColorRole = Qt::UserRole,
+		NumberRole
+	};
 	ColorsDelegate(QObject *parent);
 	~ColorsDelegate();
 

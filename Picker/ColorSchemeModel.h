@@ -1,30 +1,37 @@
 #pragma once
 
 #include <QWidget>
+#include <QFile>
 
 #include <vector>
 #include <map>
 #include <utility>
+
+class QString;
+class QStandardItemModel;
+
+using ColorScheme = std::map<int, QColor>;
 
 class ColorSchemeModel : public QWidget
 {
 	Q_OBJECT
 
 public:
-	using DataType = std::vector<std::pair<QString, std::map<int, QColor>>>;
+	using DataType = std::pair<QString, ColorScheme>;
 
-	ColorSchemeModel(QWidget *parent);
+	ColorSchemeModel(const QString& filename, QWidget *parent = Q_NULLPTR);
 	~ColorSchemeModel();
 
 public slots:
-	DataType chooseScheme();
+	ColorScheme chooseScheme();
 
 signals:
 
 
 private:
-	std::vector<DataType> colorSchemes;
+	QStandardItemModel*		_model;
+	QFile					_appFile;
 
 private slots:
-	void addSequence(DataType data);
+	void addScheme(DataType data);
 };
