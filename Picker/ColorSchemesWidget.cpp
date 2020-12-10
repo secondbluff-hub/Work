@@ -275,6 +275,8 @@ void ColorSchemesWidget::editTableLine()
 				name.append("_1");
 			}
 
+			name.replace(' ', '_');
+
 			if (name != _data[_table->currentIndex().row()].first)
 			{
 				int currRow = _table->currentIndex().row();
@@ -440,9 +442,9 @@ void ColorSchemesWidget::createKit()
 {
 	QString name = QInputDialog::getText(this, "Name creator",
 		"Enter a name for the new set:",
-		QLineEdit::Normal, "Name");
+		QLineEdit::Normal, "Name").trimmed();
 
-	if (name == "")
+	if (name.isEmpty())
 	{
 		name = "Name";
 	}
