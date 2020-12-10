@@ -14,8 +14,6 @@ QColor ColorGenerate::generateColor()
 
 QColor ColorGenerate::generateUniqColor(const std::map<int, QColor>& colors)
 {
-	//static int minRange = 75;
-	//static int maxRange = 360 - minRange / 2;
 	auto isUniqColor = [&colors = colors](const QColor& color)
 	{
 		for (const auto& numToColor : colors)

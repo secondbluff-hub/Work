@@ -12,6 +12,7 @@
 #include <QDebug>
 #include <QMenu>
 #include <QToolTip>
+#include <QCloseEvent>
 #include <QCursor>
 #include <QColor>
 #include <QColorDialog>
@@ -59,7 +60,7 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	lowHBox->addWidget(okButton);
 	vbox->addLayout(lowHBox);
 
-	connect(okButton, &QPushButton::clicked, this, &Picker::accept);
+	connect(okButton, &QPushButton::clicked, this, &Picker::close);
 
 	connect(genButton, &QPushButton::clicked, this, &Picker::editListBox);
 	connect(clearButton, &QPushButton::clicked, this, &Picker::clearListBox);
@@ -190,25 +191,28 @@ void Picker::changeItemColor()
 {
 	auto newColor = QColorDialog::getColor(_list->currentItem()->backgroundColor(), this);
 
-	_list->currentItem()->setBackgroundColor(newColor);
-	int num;
-
-	if (ColorGenerate::isContrastColor(newColor, _lineContainer, num))
+	if (newColor.isValid())
 	{
-		QMessageBox msgBox(this);
-		msgBox.setWindowTitle("Warning");
-		msgBox.setText("New color is not in contrast to item with number " + QString::number(num));
-		auto changeButton = new QPushButton("Change color");
-		msgBox.addButton(QMessageBox::Save);
-		msgBox.addButton(changeButton, QMessageBox::ActionRole);
-		msgBox.setDefaultButton(changeButton);
-		connect(changeButton, &QPushButton::clicked, this, &Picker::changeItemColor);
-		msgBox.exec();
+		_list->currentItem()->setBackgroundColor(newColor);
+		int num;
+
+		if (ColorGenerate::isContrastColor(newColor, _lineContainer, num))
+		{
+			QMessageBox msgBox(this);
+			msgBox.setWindowTitle("Warning");
+			msgBox.setText("New color is not in contrast to item with number " + QString::number(num));
+			auto changeButton = new QPushButton("Change color");
+			msgBox.addButton(QMessageBox::Save);
+			msgBox.addButton(changeButton, QMessageBox::ActionRole);
+			msgBox.setDefaultButton(changeButton);
+			connect(changeButton, &QPushButton::clicked, this, &Picker::changeItemColor);
+			msgBox.exec();
+		}
+
+		_lineContainer[_list->currentItem()->text().toInt()] = newColor;
+
+		emit containerChanged(true);
 	}
-
-	_lineContainer[_list->currentItem()->text().toInt()] = newColor;
-
-	emit containerChanged(true);
 }
 
 bool Picker::lineParse()
@@ -241,4 +245,37 @@ bool Picker::lineParse()
 	}
 
 	return true;
+}
+
+int Picker::closeMsgBox()
+{
+	QMessageBox msgBox;
+	msgBox.setText("The document has been modified.");
+	msgBox.setInformativeText("Do you want to save your changes?");
+	msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+	msgBox.setDefaultButton(QMessageBox::Save);
+	return msgBox.exec();
+}
+
+void Picker::closeEvent(QCloseEvent *event)
+{
+	if (isWindowModified() && _lineContainer.size())
+	{
+		switch (closeMsgBox()) {
+		case QMessageBox::Cancel:
+			break;
+		case QMessageBox::Discard:
+			setWindowModified(false);
+		case QMessageBox::Save:
+			accept();
+		}
+	}
+	else 
+	{
+		if (_lineContainer.size() == 0)
+		{
+			setWindowModified(false);
+		}
+		accept();
+	}
 }

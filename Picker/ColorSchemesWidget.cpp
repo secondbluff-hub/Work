@@ -268,18 +268,21 @@ void ColorSchemesWidget::editTableLine()
 			"Enter a new name:",
 			QLineEdit::Normal, _data[_table->currentIndex().row()].first);
 
-		if (name != "")
+		if (name != "" && name != _data[_table->currentIndex().row()].first)
 		{
-			while (!isUniqName(name))
+			while (!isUniqName(name, _table->currentIndex().row()))
 			{
 				name.append("_1");
 			}
 
-			int currRow = _table->currentIndex().row();
-			_data[currRow].first = name;
-			_model->setData(_table->currentIndex(), name);
+			if (name != _data[_table->currentIndex().row()].first)
+			{
+				int currRow = _table->currentIndex().row();
+				_data[currRow].first = name;
+				_model->setData(_table->currentIndex(), name);
 
-			emit dataChanged(true);
+				emit dataChanged(true);
+			}
 		}
 	}
 	else if (_table->currentIndex().column() == 1)
@@ -307,7 +310,7 @@ void ColorSchemesWidget::editTableLine()
 				colorsItem->setData(numbers, ColorsDelegate::NumberRole);
 
 				_model->setItem(_table->currentIndex().row(), _table->currentIndex().column(),
-																						colorsItem);
+					colorsItem);
 
 				emit dataChanged(true);
 			}
@@ -321,7 +324,6 @@ int ColorSchemesWidget::closeMsgBox()
 	msgBox.setText("The document has been modified.");
 	msgBox.setInformativeText("Do you want to save your changes?");
 	msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-	msgBox.setDefaultButton(QMessageBox::Save);
 	return msgBox.exec();
 }
 
@@ -381,16 +383,28 @@ void ColorSchemesWidget::choosedLine(const QItemSelection& selected, const QItem
 	}
 }
 
-bool ColorSchemesWidget::isUniqName(const QString & name) const
+bool ColorSchemesWidget::isUniqName(const QString & name, int index) const
 {
-	for (const auto& n : _data)
+	if (index >= 0)
 	{
-		if (n.first == name)
+		for (int i = 0; i < _data.size(); ++i)
 		{
-			return false;
+			if (_data[i].first == name && i != index)
+			{
+				return false;
+			}
 		}
 	}
-
+	else
+	{
+		for (const auto& n : _data)
+		{
+			if (n.first == name)
+			{
+				return false;
+			}
+		}
+	}
 	return true;
 }
 
@@ -426,7 +440,14 @@ void ColorSchemesWidget::createKit()
 {
 	QString name = QInputDialog::getText(this, "Name creator",
 		"Enter a name for the new set:",
-		QLineEdit::Normal, "");
+		QLineEdit::Normal, "Name");
+
+	if (name == "")
+	{
+		name = "Name";
+	}
+
+	name.replace(' ', '_');
 
 	while (!isUniqName(name))
 	{
@@ -436,7 +457,17 @@ void ColorSchemesWidget::createKit()
 	Picker w(this);
 	if (w.exec() == QDialog::Accepted)
 	{
-		_data.push_back(std::make_pair(std::move(name), w.numbersToColors()));
-		appendTable();
+		if (w.numbersToColors().size())
+		{
+			_data.push_back(std::make_pair(std::move(name), w.numbersToColors()));
+			appendTable();
+		}
+		else
+		{
+			QMessageBox msgBox;
+			msgBox.setText("Warning: An empty container will not be added");
+			msgBox.setDefaultButton(QMessageBox::Ok);
+			msgBox.exec();
+		}
 	}
 }

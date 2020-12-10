@@ -27,6 +27,15 @@ signals:
 	void detectedBadValue(int value) const;
 	void containerChanged(bool isChaged);
 
+private slots:
+	void provideContextMenu(const QPoint &pos);
+
+	void valueError(unsigned long long value);
+	void valueChanged();
+
+	void erase();
+	void changeItemColor();
+
 private:
 	QLineEdit*				_line;
 	QListWidget*			_list;
@@ -39,12 +48,7 @@ private:
 
 	void addListItem(int num, const QColor& color);
 
-private slots:
-	void provideContextMenu(const QPoint &pos);
+	int closeMsgBox();
 
-	void valueError(unsigned long long value);
-	void valueChanged();
-
-	void erase();
-	void changeItemColor();
+	void closeEvent(QCloseEvent *event) override;
 };

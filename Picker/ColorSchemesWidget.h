@@ -58,7 +58,7 @@ private:
 	ColorScheme			_currentScheme;
 
 	void choosedLine(const QItemSelection& selected, const QItemSelection& deselected);
-	bool isUniqName(const QString & name) const;
+	bool isUniqName(const QString & name, int index = -1) const;
 	void appendTable();
 
 	void closeEvent(QCloseEvent *event) override;
