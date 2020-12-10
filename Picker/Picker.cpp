@@ -40,7 +40,6 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 
 	_list = new QListWidget(this);
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
-	_list->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	connect(_list, &QListWidget::doubleClicked, this, &Picker::changeItemColor);
 	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
 
@@ -182,16 +181,7 @@ void Picker::clearListBox()
 
 void Picker::erase()
 {
-	for (int i = 0; i < _lineContainer.size(); ++i)
-	{
-		if (_list->selectionModel()->isRowSelected(i, QModelIndex()))
-		{
-			_lineContainer.erase(_list->takeItem(i)->text().toInt());
-			--i;
-		}
-	}
-
-	//_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
+	_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
 
 	emit containerChanged(true);
 }

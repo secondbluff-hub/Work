@@ -5,7 +5,6 @@
 
 #include <vector>
 #include <map>
-#include <set>
 #include <utility>
 
 class QFile;
@@ -47,6 +46,7 @@ private slots:
 
 	void erase();
 	void copy();
+	void paste();
 	void editTableLine();
 
 private:	
@@ -56,7 +56,6 @@ private:
 	QDataStream			_ioFile;
 	DataType			_data;
 	ColorScheme			_currentScheme;
-	std::set<int>		_selectedIndex;
 
 	void choosedLine(const QItemSelection& selected, const QItemSelection& deselected);
 	bool isUniqName(const QString & name) const;

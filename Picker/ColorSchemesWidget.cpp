@@ -2,6 +2,9 @@
 #include "Picker.h"
 #include "ColorsDelegate.h"
 
+#include <set>
+
+#include <QApplication>
 #include <QString>
 #include <QColor>
 #include <QFile>
@@ -14,6 +17,8 @@
 #include <QInputDialog>
 #include <QMenu>
 #include <QCloseEvent>
+#include <QShortcut>
+#include <QClipboard>
 #include <qDebug>
 
 ColorSchemesWidget::ColorSchemesWidget(QFile& file, QStandardItemModel& model, QDialog *parent)
@@ -67,6 +72,15 @@ ColorSchemesWidget::ColorSchemesWidget(QFile& file, QStandardItemModel& model, Q
 	hbox->addWidget(addBtn);
 
 	vbox->addLayout(hbox);
+
+	QShortcut *shortcut_copy = new QShortcut(QKeySequence::Copy, _table);
+	connect(shortcut_copy, &QShortcut::activated, this, &ColorSchemesWidget::copy);
+
+	QShortcut *shortcut_paste = new QShortcut(QKeySequence::Paste, _table);
+	connect(shortcut_paste, &QShortcut::activated, this, &ColorSchemesWidget::paste);
+
+	QShortcut *shortcut_erase = new QShortcut(QKeySequence::Delete, _table);
+	connect(shortcut_erase, &QShortcut::activated, this, &ColorSchemesWidget::erase);
 
 	if (_appFile->size() > 0)
 	{
@@ -165,40 +179,84 @@ void ColorSchemesWidget::save()
 
 void ColorSchemesWidget::erase()
 {
-	for (auto& index = _selectedIndex.rbegin(); index != _selectedIndex.rend(); ++index)
+	std::set<int> indexes;
+
+	for (const auto& index : _table->selectionModel()->selection().indexes())
 	{
-		qDebug() << *index;
-		qDebug() << _data.size();
-		_model->removeRow(*index);
+		if (index.column() == 1)
+		{
+			indexes.insert(index.row());
+		}
+	}
+
+	for (auto& index = indexes.rbegin(); index != indexes.rend(); ++index)
+	{
 		_data.erase(_data.begin() + *index);
+		_model->removeRow(*index);
 	}
-	/*
-	for (const auto& index : _selectedIndex)
-	{
-		qDebug() << index;
-		qDebug() << _data.size();
-		_model->removeRow(index);
-		_data.erase(_data.begin() + index);
-	}
-	*/
-	_selectedIndex.clear();
 	
 	emit dataChanged(true);
 }
 
 void ColorSchemesWidget::copy()
 {
-	for (const auto& index : _selectedIndex)
+	QString text = QString::number(_table->selectionModel()->selection().indexes().size() / _model->columnCount());
+
+	for (const auto& index : _table->selectionModel()->selection().indexes())
 	{
-		auto name = _data[index].first;
-		while (!isUniqName(name))
+		if (index.column() == 1)
 		{
-			name.append("_1");
+			auto name = _data[index.row()].first;
+			
+			text += ' ' + name + ' ' + QString::number(_data[index.row()].second.size());
+
+			for (const auto& numToColor : _data[index.row()].second)
+			{
+				text += ' ' + QString::number(numToColor.first) + ' ' + numToColor.second.name();
+			}
 		}
+	}
+	QApplication::clipboard()->setText(text);
+}
 
-		_data.push_back(std::make_pair(name, _data[index].second));
+void ColorSchemesWidget::paste()
+{
+	if (QApplication::clipboard()->text().size())
+	{
+		auto listText = QApplication::clipboard()->text().trimmed().split(' ', QString::SkipEmptyParts);
+		int size = listText.front().toInt();
 
-		appendTable();
+		int index = 1;
+
+		for (int i = 0; i < size; ++i)
+		{
+			auto name = listText[index++];
+
+			while (!isUniqName(name))
+			{
+				name.append("_1");
+			}
+			auto groupSize = listText[index++].toInt();
+
+			ColorScheme scheme;
+			bool isOdd = true;
+			int num;
+			for (int j = 0; j < groupSize * 2; ++j)
+			{
+				if (isOdd)
+				{
+					num = listText[index++].toInt();
+				}
+				else
+				{
+					scheme.emplace(std::make_pair(num, listText[index++]));
+				}
+				isOdd = !isOdd;
+			}
+			_data.push_back(std::make_pair(name, scheme));
+
+			appendTable();
+		}
 	}
 }
 
@@ -313,31 +371,7 @@ ColorScheme ColorSchemesWidget::currentScheme()
 
 void ColorSchemesWidget::choosedLine(const QItemSelection& selected, const QItemSelection& deselected)
 {
-	//_selectedIndex.clear();
-
-	for (const auto& item : selected.indexes())
-	{
-		if (item.column() == 1)
-		{
-			_selectedIndex.insert(item.row());
-		}
-	}
-
-	for (const auto& item : deselected.indexes())
-	{
-		if (item.column() == 1 && _selectedIndex.size() > item.row())
-		{
-			_selectedIndex.erase(item.row());
-		}
-	}
-
-	for (const auto& a : _selectedIndex)
-	{
-		qDebug() << a;
-	}
-	qDebug() << '\n';
-
-	if (_selectedIndex.size() == 1)
+	if(_table->selectionModel()->selection().size() == 1)
 	{
 		emit isSingleHighlight(true);
 	}
@@ -362,17 +396,30 @@ bool ColorSchemesWidget::isUniqName(const QString & name) const
 
 void ColorSchemesWidget::provideContextMenu(const QPoint &pos)
 {
-	if (_selectedIndex.size())
-	{
-		QPoint item = _table->mapToGlobal(pos);
-		QMenu submenu;
-		auto delAct = submenu.addAction("Delete", this, &ColorSchemesWidget::erase);
-		delAct->setShortcut(QKeySequence::Delete);
-		addAction(delAct);
-		submenu.addAction("Copy", this, &ColorSchemesWidget::copy);
+	QPoint item = _table->mapToGlobal(pos);
+	QMenu submenu;
+	auto delAct = submenu.addAction("Delete", this, &ColorSchemesWidget::erase);
+	delAct->setShortcut(QKeySequence::Delete);
+	addAction(delAct);
+	auto copyAct = submenu.addAction("Copy", this, &ColorSchemesWidget::copy);
+	copyAct->setShortcut(QKeySequence::Copy);
+	addAction(copyAct);
+	auto pasteAct = submenu.addAction("Paste", this, &ColorSchemesWidget::paste);
+	pasteAct->setShortcut(QKeySequence::Paste);
+	addAction(pasteAct);
 
-		QAction* rightClickItem = submenu.exec(item);
+	if (_table->selectionModel()->selection().size() == 0)
+	{
+		delAct->setEnabled(false);
+		copyAct->setEnabled(false);
 	}
+
+	if (QApplication::clipboard()->text().size() == 0)
+	{
+		pasteAct->setEnabled(false);
+	}
+
+	QAction* rightClickItem = submenu.exec(item);
 }
 
 void ColorSchemesWidget::createKit()
