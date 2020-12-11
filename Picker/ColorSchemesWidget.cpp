@@ -21,8 +21,9 @@
 #include <QClipboard>
 #include <qDebug>
 
-ColorSchemesWidget::ColorSchemesWidget(QFile& file, QStandardItemModel& model, QDialog *parent)
-	: _model(&model), _appFile(&file), _ioFile(_appFile), QDialog(parent)
+ColorSchemesWidget::ColorSchemesWidget(const std::vector<std::pair<QString, ColorScheme>>& data,
+										QStandardItemModel& model, QWidget* parent)
+	: _model(&model), _dataSave(data), QDialog(parent)
 {
 	setWindowTitle("Color schemes widget[*]");
 
@@ -82,38 +83,10 @@ ColorSchemesWidget::ColorSchemesWidget(QFile& file, QStandardItemModel& model, Q
 	QShortcut *shortcut_erase = new QShortcut(QKeySequence::Delete, _table);
 	connect(shortcut_erase, &QShortcut::activated, this, &ColorSchemesWidget::erase);
 
-	if (_appFile->size() > 0)
+	for (const auto& item : data)
 	{
-		if (_ioFile.version() != QDataStream::Qt_5_9)
-		{
-			qDebug() << "Wrong version of Qt";
-		}
-
-		int i;
-		_ioFile >> i;
-
-		for (; i > 0; --i)
-		{
-			QString name;
-			_ioFile >> name;
-
-			int j;
-			_ioFile >> j;
-
-			std::map<int, QColor> dataColors;
-			for (; j > 0; --j)
-			{
-				int number;
-				QString colorName;
-				_ioFile >> number >> colorName;
-
-				QColor color(colorName);
-				dataColors.insert(std::make_pair(number, color));
-			}
-
-			_data.push_back(std::make_pair(name, dataColors));
-			appendTable();
-		}
+		_data.push_back(item);
+		appendTable();
 	}
 
 	connect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::setWindowModified);
@@ -121,7 +94,7 @@ ColorSchemesWidget::ColorSchemesWidget(QFile& file, QStandardItemModel& model, Q
 
 ColorSchemesWidget::~ColorSchemesWidget()
 {
-	_appFile->close();
+
 }
 
 void ColorSchemesWidget::clearTable()
@@ -141,7 +114,7 @@ void ColorSchemesWidget::selectKit()
 	case QMessageBox::Cancel:
 		break;
 	case QMessageBox::Save:
-		save();
+		_dataSave = _data;
 	case QMessageBox::Discard:
 		accept();
 	}
@@ -151,27 +124,7 @@ void ColorSchemesWidget::save()
 {
 	if (isWindowModified())
 	{
-		_appFile->resize(0);
-
-		_ioFile.setVersion(QDataStream::Qt_5_9);
-		if (_data.size() > 0)
-		{
-			_ioFile << static_cast<qint32>(_data.size());
-
-			for (int i = 0; i < _data.size(); ++i)
-			{
-				_ioFile << _data[i].first;
-				_ioFile << static_cast<qint32>(_data[i].second.size());
-
-				for (const auto& numToColor : _data[i].second)
-				{
-					_ioFile << static_cast<qint32>(numToColor.first);
-					_ioFile << numToColor.second.name();
-				}
-			}
-		}
-
-		_appFile->flush();
+		_dataSave = _data;
 
 		emit dataChanged(false);
 	}
@@ -338,14 +291,16 @@ void ColorSchemesWidget::closeEvent(QCloseEvent *event)
 			event->ignore();
 			break;
 		case QMessageBox::Save:
-			save();
+			_dataSave = _data;
 		case QMessageBox::Discard:
 			event->accept();
+			accept();
 		}
 	}
 	else
 	{
 		event->accept();
+		accept();
 	}
 }
 
@@ -371,6 +326,11 @@ void ColorSchemesWidget::appendTable()
 ColorScheme ColorSchemesWidget::currentScheme()
 {
 	return _currentScheme;
+}
+
+std::vector<std::pair<QString, ColorScheme>> ColorSchemesWidget::forSaving()
+{
+	return _dataSave;
 }
 
 void ColorSchemesWidget::choosedLine(const QItemSelection& selected, const QItemSelection& deselected)

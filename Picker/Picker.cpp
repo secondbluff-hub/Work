@@ -263,10 +263,12 @@ void Picker::closeEvent(QCloseEvent *event)
 	{
 		switch (closeMsgBox()) {
 		case QMessageBox::Cancel:
+			event->ignore();
 			break;
 		case QMessageBox::Discard:
 			setWindowModified(false);
 		case QMessageBox::Save:
+			event->accept();
 			accept();
 		}
 	}
@@ -276,6 +278,7 @@ void Picker::closeEvent(QCloseEvent *event)
 		{
 			setWindowModified(false);
 		}
+		event->accept();
 		accept();
 	}
 }

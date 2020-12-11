@@ -9,7 +9,9 @@ int main(int argc, char *argv[])
 
 	ColorSchemeModel m("filename.data");
 
-	qDebug() << m.chooseScheme().size();
+	//m.addScheme({ "tester", { {1, Qt::yellow} } });
+
+	qDebug() << m.chooseScheme(new QWidget()).size();
 
 	return 0;
 }

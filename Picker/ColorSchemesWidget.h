@@ -24,11 +24,14 @@ class ColorSchemesWidget : public QDialog
 public:
 	using DataType = std::vector<std::pair<QString, ColorScheme>>;
 
-	explicit ColorSchemesWidget(QFile& file, QStandardItemModel& model,
-															QDialog *parent = Q_NULLPTR);
+	explicit ColorSchemesWidget	(
+					const std::vector<std::pair<QString, ColorScheme>>& data,
+					QStandardItemModel& model, QWidget* parent = Q_NULLPTR
+								);
 	~ColorSchemesWidget();
 
 	ColorScheme currentScheme();
+	DataType forSaving();
 
 public slots:
 	void save();
@@ -52,9 +55,8 @@ private slots:
 private:	
 	QTreeView*			_table;
 	QStandardItemModel*	_model;
-	QFile*				_appFile;
-	QDataStream			_ioFile;
 	DataType			_data;
+	DataType			_dataSave;
 	ColorScheme			_currentScheme;
 
 	void choosedLine(const QItemSelection& selected, const QItemSelection& deselected);

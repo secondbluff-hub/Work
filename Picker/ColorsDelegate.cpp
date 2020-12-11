@@ -18,7 +18,7 @@ ColorsDelegate::~ColorsDelegate()
 }
 
 void ColorsDelegate::paint(QPainter * painter, const QStyleOptionViewItem & option,
-	const QModelIndex & index) const
+																const QModelIndex & index) const
 {
 	QItemDelegate::paint(painter, option, index);
 	if (index.isValid() && index.column() == 1)
