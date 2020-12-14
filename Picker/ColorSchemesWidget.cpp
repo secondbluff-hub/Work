@@ -92,11 +92,6 @@ ColorSchemesWidget::ColorSchemesWidget(const std::vector<std::pair<QString, Colo
 	connect(this, &ColorSchemesWidget::dataChanged, this, &ColorSchemesWidget::setWindowModified);
 }
 
-ColorSchemesWidget::~ColorSchemesWidget()
-{
-
-}
-
 void ColorSchemesWidget::clearTable()
 {
 	_data.clear();

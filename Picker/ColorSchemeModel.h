@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IColorSchemeStorage.h"
+
 #include <QWidget>
 #include <QFile>
 
@@ -12,7 +14,7 @@ class QStandardItemModel;
 
 using ColorScheme = std::map<int, QColor>;
 
-class ColorSchemeModel : public QWidget
+class ColorSchemeModel : public QWidget, public IColorSchemeStorage
 {
 	Q_OBJECT
 
@@ -23,16 +25,16 @@ public:
 	~ColorSchemeModel();
 
 public slots:
-	ColorScheme chooseScheme(QWidget* parent);
+	ColorScheme chooseScheme(QWidget* parent) override;
 
-	void addScheme(const std::pair<QString, ColorScheme>& scheme);
+	void addScheme(const std::pair<QString, ColorScheme>& scheme) override;
 
 signals:
 
 
 private:
 	QStandardItemModel*		_model;
-	QFile*					_appFile;
+	QFile					_appFile;
 	QDataStream				_ioFile;
 	DataType				_data;
 	bool					_isModified;

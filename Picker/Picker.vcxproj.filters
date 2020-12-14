@@ -72,5 +72,8 @@
     <ClInclude Include="ColorGenerate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IColorSchemeStorage.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@
 #include <QDebug>
 
 ColorSchemeModel::ColorSchemeModel(const QString& filename, QWidget *parent)
-	: _appFile(new QFile(filename)), _ioFile(_appFile), QWidget(parent)
+	: _appFile(filename), _ioFile(&_appFile), QWidget(parent)
 {
 	_model = new QStandardItemModel(this);
 	_model->setColumnCount(2);
@@ -15,13 +15,13 @@ ColorSchemeModel::ColorSchemeModel(const QString& filename, QWidget *parent)
 
 	_isModified = false;
 
-	if (!_appFile->open(QIODevice::ReadWrite))
+	if (!_appFile.open(QIODevice::ReadWrite))
 	{
 		qDebug() << "Couldn't open: " << filename;
 	}
 	else
 	{
-		if (_appFile->size() > 0)
+		if (_appFile.size() > 0)
 		{
 			if (_ioFile.version() != QDataStream::Qt_5_9)
 			{
@@ -60,7 +60,7 @@ ColorSchemeModel::~ColorSchemeModel()
 {
 	if (_isModified)
 	{
-		_appFile->resize(0);
+		_appFile.resize(0);
 
 		_ioFile.setVersion(QDataStream::Qt_5_9);
 
@@ -78,10 +78,10 @@ ColorSchemeModel::~ColorSchemeModel()
 			}
 		}
 
-		_appFile->flush();
+		_appFile.flush();
 	}
 
-	_appFile->close();
+	_appFile.close();
 }
 
 ColorScheme ColorSchemeModel::chooseScheme(QWidget* parent)

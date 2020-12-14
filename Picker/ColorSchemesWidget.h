@@ -25,10 +25,9 @@ public:
 	using DataType = std::vector<std::pair<QString, ColorScheme>>;
 
 	explicit ColorSchemesWidget	(
-					const std::vector<std::pair<QString, ColorScheme>>& data,
+					const DataType& data,
 					QStandardItemModel& model, QWidget* parent = Q_NULLPTR
 								);
-	~ColorSchemesWidget();
 
 	ColorScheme currentScheme();
 	DataType forSaving();
