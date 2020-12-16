@@ -1,10 +1,10 @@
-#include "ColorGenerate.h"
+#include "ColorGenerator.h"
 
 #include <random>
 
 #include <QColor>
 
-QColor ColorGenerate::generateColor()
+QColor ColorGenerator::generateColor()
 {
 	return QColor::fromHsv	(	generateRandom(0, 359),
 								generateRandom(200, 255),
@@ -12,7 +12,7 @@ QColor ColorGenerate::generateColor()
 							);
 }
 
-QColor ColorGenerate::generateUniqColor(const std::map<int, QColor>& colors)
+QColor ColorGenerator::generateUniqColor(const std::map<int, QColor>& colors)
 {
 	auto isUniqColor = [&colors = colors](const QColor& color)
 	{
@@ -35,7 +35,7 @@ QColor ColorGenerate::generateUniqColor(const std::map<int, QColor>& colors)
 	return color;
 }
 
-QColor ColorGenerate::generateContrastColor(int & lastHue,
+QColor ColorGenerator::generateContrastColor(int & lastHue,
 												const std::map<int, QColor>& colors)
 {
 	QColor color = generateColor();
@@ -66,7 +66,7 @@ QColor ColorGenerate::generateContrastColor(int & lastHue,
 	return color;
 }
 
-bool ColorGenerate::isContrastColor(const QColor & color,
+bool ColorGenerator::isContrastColor(const QColor & color,
 											const std::map<int, QColor>& colors, int & num)
 {
 	int minRange = 360 / (colors.size());
@@ -87,7 +87,7 @@ bool ColorGenerate::isContrastColor(const QColor & color,
 	return true;
 }
 
-int ColorGenerate::generateRandom(int min, int max)
+int ColorGenerator::generateRandom(int min, int max)
 {
 	std::random_device device;
 	std::mt19937 mt_rand(device());

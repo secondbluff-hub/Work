@@ -5,7 +5,7 @@
 
 class QColor;
 
-class ColorGenerate
+class ColorGenerator
 {
 public:
 	static QColor generateColor();

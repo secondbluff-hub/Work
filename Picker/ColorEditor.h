@@ -9,15 +9,14 @@ class QListWidget;
 class QLineEdit;
 class QColor;
 
-class Picker : public QDialog
+class ColorEditor : public QDialog
 {
 	Q_OBJECT
 
 public:
-	Picker(QWidget *parent = Q_NULLPTR);
-	explicit Picker(const std::map<int, QColor>& container, QWidget *parent = Q_NULLPTR);
+	ColorEditor(const std::map<int, QColor>& container, QWidget *parent = nullptr);
 
-	std::map<int, QColor>&& numbersToColors();
+	std::map<int, QColor> numbersToColors();
 
 public slots:
 	void editListBox();

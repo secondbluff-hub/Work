@@ -1,5 +1,5 @@
-#include "Picker.h"
-#include "ColorGenerate.h"
+#include "ColorEditor.h"
+#include "ColorGenerator.h"
 
 #include <QRegularExpressionValidator>
 #include <QRegularExpression>
@@ -18,7 +18,8 @@
 #include <QColorDialog>
 #include <QMessageBox>
 
-Picker::Picker(QWidget *parent) : QDialog(parent)
+ColorEditor::ColorEditor(const std::map<int, QColor>& container, QWidget *parent)
+		: QDialog(parent), _lineContainer{ container }
 {
 	setWindowTitle("Color picker[*]");
 
@@ -41,8 +42,8 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 
 	_list = new QListWidget(this);
 	_list->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(_list, &QListWidget::doubleClicked, this, &Picker::changeItemColor);
-	connect(_list, &QListWidget::customContextMenuRequested, this, &Picker::provideContextMenu);
+	connect(_list, &QListWidget::doubleClicked, this, &ColorEditor::changeItemColor);
+	connect(_list, &QListWidget::customContextMenuRequested, this, &ColorEditor::provideContextMenu);
 
 	auto vbox = new QVBoxLayout(this);
 	vbox->addWidget(_label);
@@ -60,28 +61,25 @@ Picker::Picker(QWidget *parent) : QDialog(parent)
 	lowHBox->addWidget(okButton);
 	vbox->addLayout(lowHBox);
 
-	connect(okButton, &QPushButton::clicked, this, &Picker::close);
+	connect(okButton, &QPushButton::clicked, this, &ColorEditor::close);
 
-	connect(genButton, &QPushButton::clicked, this, &Picker::editListBox);
-	connect(clearButton, &QPushButton::clicked, this, &Picker::clearListBox);
+	connect(genButton, &QPushButton::clicked, this, &ColorEditor::editListBox);
+	connect(clearButton, &QPushButton::clicked, this, &ColorEditor::clearListBox);
 
-	connect(this, &Picker::detectedBadValue, this, &Picker::valueError);
-}
+	connect(this, &ColorEditor::detectedBadValue, this, &ColorEditor::valueError);
 
-Picker::Picker(const std::map<int, QColor>& container, QWidget * parent)
-	: Picker(parent)
-{
-	_lineContainer = container;
-
-	for (const auto& n : _lineContainer)
+	if (_lineContainer.size())
 	{
-		addListItem(n.first, n.second);
-	}
+		for (const auto& n : _lineContainer)
+		{
+			addListItem(n.first, n.second);
+		}
 
-	connect(this, &Picker::containerChanged, this, &Picker::setWindowModified);
+		connect(this, &ColorEditor::containerChanged, this, &ColorEditor::setWindowModified);
+	}
 }
 
-void Picker::editListBox()
+void ColorEditor::editListBox()
 {
 	_list->clear();
 
@@ -99,11 +97,11 @@ void Picker::editListBox()
 	}
 }
 
-void Picker::provideContextMenu(const QPoint &pos)
+void ColorEditor::provideContextMenu(const QPoint &pos)
 {
 	QPoint item = _list->mapToGlobal(pos);
 	QMenu submenu;
-	submenu.addAction("Delete", this, &Picker::erase);
+	submenu.addAction("Delete", this, &ColorEditor::erase);
 
 	auto printAct = submenu.addAction("Print HSV color");	// For debugging
 
@@ -119,7 +117,7 @@ void Picker::provideContextMenu(const QPoint &pos)
 	}
 }
 
-void Picker::insertSingleOrRange(int num, int beginNum = -1)
+void ColorEditor::insertSingleOrRange(int num, int beginNum = -1)
 {
 	if (beginNum >= 0) {
 		int increment = beginNum < num ? 1 : -1;
@@ -134,45 +132,45 @@ void Picker::insertSingleOrRange(int num, int beginNum = -1)
 	}
 }
 
-void Picker::insertValueWithContrastColor(int v)
+void ColorEditor::insertValueWithContrastColor(int v)
 {
 	static int lastHue = 0;
 	_lineContainer.emplace	(	std::make_pair(v,
-								ColorGenerate::generateContrastColor(lastHue, _lineContainer))
+								ColorGenerator::generateContrastColor(lastHue, _lineContainer))
 							);
 
 	emit containerChanged(true);
 }
 
-void Picker::addListItem(int num, const QColor & color)
+void ColorEditor::addListItem(int num, const QColor & color)
 {
 	_list->addItem(QString::number(num));
 	_list->item(_list->count() - 1)->setBackgroundColor(color);
 }
 
-void Picker::valueError(unsigned long long value)
+void ColorEditor::valueError(unsigned long long value)
 {
 	_line->setStyleSheet("border-style: solid; border-width: 2px; border-color: red");
 
 	auto messageError = tr("Bad value: ") + QString::number(value);
 	QToolTip::showText(QCursor::pos(), messageError);
 
-	connect(_line, &QLineEdit::textChanged, this, &Picker::valueChanged);
+	connect(_line, &QLineEdit::textChanged, this, &ColorEditor::valueChanged);
 }
 
-void Picker::valueChanged()
+void ColorEditor::valueChanged()
 {
 	_line->setStyleSheet("border-style: solid; border-width: 1px; border-color: black");
 
-	disconnect(_line, &QLineEdit::textChanged, this, &Picker::valueChanged);
+	disconnect(_line, &QLineEdit::textChanged, this, &ColorEditor::valueChanged);
 }
 
-std::map<int, QColor>&& Picker::numbersToColors()
+std::map<int, QColor> ColorEditor::numbersToColors()
 {
-	return std::move(_lineContainer);
+	return _lineContainer;
 }
 
-void Picker::clearListBox()
+void ColorEditor::clearListBox()
 {
 	_list->clear();
 	_lineContainer.clear();
@@ -180,14 +178,14 @@ void Picker::clearListBox()
 	emit containerChanged(true);
 }
 
-void Picker::erase()
+void ColorEditor::erase()
 {
 	_lineContainer.erase(_list->takeItem(_list->currentRow())->text().toInt());
 
 	emit containerChanged(true);
 }
 
-void Picker::changeItemColor()
+void ColorEditor::changeItemColor()
 {
 	auto newColor = QColorDialog::getColor(_list->currentItem()->backgroundColor(), this);
 
@@ -196,7 +194,7 @@ void Picker::changeItemColor()
 		_list->currentItem()->setBackgroundColor(newColor);
 		int num;
 
-		if (ColorGenerate::isContrastColor(newColor, _lineContainer, num))
+		if (ColorGenerator::isContrastColor(newColor, _lineContainer, num))
 		{
 			QMessageBox msgBox(this);
 			msgBox.setWindowTitle("Warning");
@@ -205,7 +203,7 @@ void Picker::changeItemColor()
 			msgBox.addButton(QMessageBox::Save);
 			msgBox.addButton(changeButton, QMessageBox::ActionRole);
 			msgBox.setDefaultButton(changeButton);
-			connect(changeButton, &QPushButton::clicked, this, &Picker::changeItemColor);
+			connect(changeButton, &QPushButton::clicked, this, &ColorEditor::changeItemColor);
 			msgBox.exec();
 		}
 
@@ -215,7 +213,7 @@ void Picker::changeItemColor()
 	}
 }
 
-bool Picker::lineParse()
+bool ColorEditor::lineParse()
 {
 	QString number;
 
@@ -247,7 +245,7 @@ bool Picker::lineParse()
 	return true;
 }
 
-int Picker::closeMsgBox()
+int ColorEditor::closeMsgBox()
 {
 	QMessageBox msgBox;
 	msgBox.setText("The document has been modified.");
@@ -257,7 +255,7 @@ int Picker::closeMsgBox()
 	return msgBox.exec();
 }
 
-void Picker::closeEvent(QCloseEvent *event)
+void ColorEditor::closeEvent(QCloseEvent *event)
 {
 	if (isWindowModified() && _lineContainer.size())
 	{

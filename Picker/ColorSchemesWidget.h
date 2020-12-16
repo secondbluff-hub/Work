@@ -24,10 +24,9 @@ class ColorSchemesWidget : public QDialog
 public:
 	using DataType = std::vector<std::pair<QString, ColorScheme>>;
 
-	explicit ColorSchemesWidget	(
-					const DataType& data,
-					QStandardItemModel& model, QWidget* parent = Q_NULLPTR
-								);
+	ColorSchemesWidget(const DataType& data,
+						QStandardItemModel& model, 
+						QWidget* parent = nullptr);
 
 	ColorScheme currentScheme();
 	DataType forSaving();
@@ -52,8 +51,8 @@ private slots:
 	void editTableLine();
 
 private:	
-	QTreeView*			_table;
-	QStandardItemModel*	_model;
+	QTreeView*			_table{};
+	QStandardItemModel*	_model{};
 	DataType			_data;
 	DataType			_dataSave;
 	ColorScheme			_currentScheme;

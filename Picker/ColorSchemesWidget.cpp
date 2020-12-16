@@ -1,5 +1,5 @@
 #include "ColorSchemesWidget.h"
-#include "Picker.h"
+#include "ColorEditor.h"
 #include "ColorsDelegate.h"
 
 #include <set>
@@ -237,7 +237,7 @@ void ColorSchemesWidget::editTableLine()
 	}
 	else if (_table->currentIndex().column() == 1)
 	{
-		Picker w(_data[_table->currentIndex().row()].second, this);
+		ColorEditor w(_data[_table->currentIndex().row()].second, this);
 
 		if (w.exec() == QDialog::Accepted)
 		{
@@ -411,7 +411,7 @@ void ColorSchemesWidget::createKit()
 		name.append("_1");
 	}
 
-	Picker w(this);
+	ColorEditor w({}, this);
 	if (w.exec() == QDialog::Accepted)
 	{
 		if (w.numbersToColors().size())

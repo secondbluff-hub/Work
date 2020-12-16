@@ -21,7 +21,7 @@ class ColorSchemeModel : public QWidget, public IColorSchemeStorage
 public:
 	using DataType = std::vector<std::pair<QString, ColorScheme>>;
 
-	ColorSchemeModel(const QString& filename, QWidget *parent = Q_NULLPTR);
+	ColorSchemeModel(const QString& filename, QWidget *parent = nullptr);
 	~ColorSchemeModel();
 
 public slots:
@@ -29,16 +29,10 @@ public slots:
 
 	void addScheme(const std::pair<QString, ColorScheme>& scheme) override;
 
-signals:
-
-
 private:
 	QStandardItemModel*		_model;
 	QFile					_appFile;
 	QDataStream				_ioFile;
 	DataType				_data;
 	bool					_isModified;
-
-private slots:
-
 };
